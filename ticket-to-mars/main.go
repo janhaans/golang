@@ -9,6 +9,17 @@ import (
 
 const kmToMars int = 62_100_000
 
+type TripToMars struct {
+	SpaceLine string
+	Days      int
+	TripType  string
+	Price     int
+}
+
+func (t TripToMars) Format() string {
+	return fmt.Sprintf("%-20s %4d %-10s  $%4d", t.SpaceLine, t.Days, t.TripType, t.Price)
+}
+
 func main() {
 	rand.Seed(time.Now().Unix())
 	spaceLines := []string{"Space Adventures", "Space X", "Virgin Galactic"}
@@ -16,12 +27,18 @@ func main() {
 	fmt.Printf("%-20s %4s %-10s  %5s\n", "Spaceline", "Days", "Trip Type", "Price")
 	fmt.Printf("%45s\n", strings.Repeat("=", 45))
 	for i := 0; i < 10; i++ {
-		spaceLine := getSpaceLine(spaceLines)
-		tripType := getTripType(tripTypes)
-		days, price := calculateDayPrice(tripType)
-		fmt.Printf("%-20s %4d %-10s  $%4d\n", spaceLine, days, tripType, price)
+		tripToMars := GetTripToMars(spaceLines, tripTypes)
+		fmt.Println(tripToMars.Format())
 	}
 
+}
+
+func GetTripToMars(spaceLines []string, tripTypes []string) TripToMars {
+	trip := TripToMars{}
+	trip.SpaceLine = getSpaceLine(spaceLines)
+	trip.TripType = getTripType(tripTypes)
+	trip.Days, trip.Price = calculateDayPrice(trip.TripType)
+	return trip
 }
 
 func getSpaceLine(spaceLines []string) string {
