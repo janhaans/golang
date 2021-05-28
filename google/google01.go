@@ -14,6 +14,7 @@ func main() {
 	}
 
 	//Low level way to read and output response body
+	//note that a slice is a reference type
 	bs := make([]byte, 99999)
 	_, err = r.Body.Read(bs)
 	if err != nil && err != io.EOF {
