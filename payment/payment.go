@@ -9,7 +9,7 @@ import (
 type Payment struct {
 	From   string
 	To     string
-	Amount float64
+	Amount float64 //Euro
 	once   sync.Once
 }
 
