@@ -9,7 +9,7 @@ import (
 )
 
 type TestCases struct {
-	TokenCases []TokenCase
+	Cases []TokenCase
 }
 type TokenCase struct {
 	Text   string
@@ -20,12 +20,11 @@ func TestTokenizeToml(t *testing.T) {
 	var tcs TestCases
 	_, err := toml.DecodeFile("tokenize_cases.toml", &tcs)
 	require.NoError(t, err, fmt.Sprintf("%#v", err))
-	for _, tc := range tcs.TokenCases {
+	for _, tc := range tcs.Cases {
 		t.Run(tc.Text, func(t *testing.T) {
 			require.Equal(t, tc.Tokens, Tokenize(tc.Text))
 		})
 	}
-
 }
 
 var tokenCases = []struct {
