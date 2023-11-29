@@ -45,6 +45,7 @@ func main() {
 
 func ReadQuiz(s string) (Quiz, error) {
 	f, err := os.Open(s)
+	defer f.Close()
 	if err != nil {
 		return Quiz{}, err
 	}
