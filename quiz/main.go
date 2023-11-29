@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -21,9 +24,14 @@ func main() {
 		log.Fatalf("%#v", err)
 	}
 
-	numProblems, goodAnswers := PlayQuiz(problems)
+	ShuffleQuiz(problems)
+	numProblems, goodAnswers, err := PlayQuiz(problems)
 
-	fmt.Printf("You have solved %d problems out of %d\n", goodAnswers, numProblems)
+	if err != nil {
+		fmt.Printf("\nTimeout: you have solved %d problems out of %d\n", goodAnswers, numProblems)
+	} else {
+		fmt.Printf("You have solved %d problems out of %d\n", goodAnswers, numProblems)
+	}
 }
 
 func ReadQuiz(s string) (problems [][]string, err error) {
@@ -36,27 +44,57 @@ func ReadQuiz(s string) (problems [][]string, err error) {
 	return reader.ReadAll()
 }
 
-func PlayQuiz(problems [][]string) (numProblems int, solvedproblems int) {
-	goodAnswers := 0
-	for _, problem := range problems {
-		question := problem[0]
-		answer := problem[1]
-		givenAnswer, _ := GetAnswer(question)
-		if answer == givenAnswer {
-			goodAnswers++
-		}
-	}
-	return len(problems), goodAnswers
+func ShuffleQuiz(problems [][]string) {
+	rand.Shuffle(len(problems), func(i, j int) {
+		problems[i], problems[j] = problems[j], problems[i]
+	})
 }
 
-func GetAnswer(question string) (string, error) {
-	fmt.Printf("Question: %s\n", question)
-	fmt.Print("Enter answer: ")
+func PlayQuiz(problems [][]string) (numProblems int, solvedProblems int, err error) {
+	StartQuiz()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	numProblems = len(problems)
+	solvedProblems = 0
+
+	ch := make(chan int)
+	go func() {
+		for _, problem := range problems {
+			question := problem[0]
+			answer := problem[1]
+			givenAnswer, _ := GetAnswer(question)
+			if answer == givenAnswer {
+				ch <- 1
+			}
+		}
+	}()
+
+	for i := 0; i < len(problems); i++ {
+		select {
+		case <-ch:
+			solvedProblems++
+		case <-ctx.Done():
+			return numProblems, solvedProblems, ctx.Err()
+		}
+	}
+	return numProblems, solvedProblems, nil
+}
+
+func GetAnswer(question string) (answer string, err error) {
+	fmt.Printf("%s = ", question)
 	reader := bufio.NewReader(os.Stdin)
-	answer, err := reader.ReadString('\n')
+	answer, err = reader.ReadString('\n')
 	if err != nil {
 		return "", err
 	}
 	answer = strings.TrimSuffix(answer, "\n")
 	return answer, nil
+}
+
+func StartQuiz() {
+	fmt.Print("You have 10 seconds to finish the quiz. Enter to start quiz: ")
+	reader := bufio.NewReader(os.Stdin)
+	reader.ReadString('\n')
+	return
 }
