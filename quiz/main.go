@@ -13,19 +13,28 @@ import (
 	"time"
 )
 
+type Problem struct {
+	Question string
+	Answer   string
+}
+
+type Quiz struct {
+	Problems []Problem
+}
+
 func main() {
 	var fileName string
 	flag.StringVar(&fileName, "f", "problems.csv", "File name of file with problems in CSV format")
 	flag.Parse()
 	fmt.Printf("File name: %s\n", fileName)
 
-	problems, err := ReadQuiz(fileName)
+	quiz, err := ReadQuiz(fileName)
 	if err != nil {
 		log.Fatalf("%#v", err)
 	}
 
-	ShuffleQuiz(problems)
-	numProblems, goodAnswers, err := PlayQuiz(problems)
+	ShuffleQuiz(quiz)
+	numProblems, goodAnswers, err := PlayQuiz(quiz)
 
 	if err != nil {
 		fmt.Printf("\nTimeout: you have solved %d problems out of %d\n", goodAnswers, numProblems)
@@ -34,43 +43,52 @@ func main() {
 	}
 }
 
-func ReadQuiz(s string) (problems [][]string, err error) {
+func ReadQuiz(s string) (Quiz, error) {
 	f, err := os.Open(s)
 	if err != nil {
-		return nil, err
+		return Quiz{}, err
 	}
 
 	reader := csv.NewReader(f)
-	return reader.ReadAll()
+	records, err := reader.ReadAll()
+	if err != nil {
+		return Quiz{}, err
+	}
+
+	quiz := Quiz{}
+	for _, row := range records {
+		problem := Problem{row[0], row[1]}
+		quiz.Problems = append(quiz.Problems, problem)
+	}
+
+	return quiz, nil
 }
 
-func ShuffleQuiz(problems [][]string) {
-	rand.Shuffle(len(problems), func(i, j int) {
-		problems[i], problems[j] = problems[j], problems[i]
+func ShuffleQuiz(quiz Quiz) {
+	rand.Shuffle(len(quiz.Problems), func(i, j int) {
+		quiz.Problems[i], quiz.Problems[j] = quiz.Problems[j], quiz.Problems[i]
 	})
 }
 
-func PlayQuiz(problems [][]string) (numProblems int, solvedProblems int, err error) {
+func PlayQuiz(quiz Quiz) (numProblems int, solvedProblems int, err error) {
 	StartQuiz()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	numProblems = len(problems)
+	numProblems = len(quiz.Problems)
 	solvedProblems = 0
 
 	ch := make(chan int)
 	go func() {
-		for _, problem := range problems {
-			question := problem[0]
-			answer := problem[1]
-			givenAnswer, _ := GetAnswer(question)
-			if answer == givenAnswer {
+		for _, problem := range quiz.Problems {
+			answer, _ := GetAnswer(problem.Question)
+			if answer == problem.Answer {
 				ch <- 1
 			}
 		}
 	}()
 
-	for i := 0; i < len(problems); i++ {
+	for i := 0; i < len(quiz.Problems); i++ {
 		select {
 		case <-ch:
 			solvedProblems++
