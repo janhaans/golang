@@ -33,8 +33,8 @@ func main() {
 		log.Fatalf("%#v", err)
 	}
 
-	ShuffleQuiz(quiz)
-	numProblems, goodAnswers, err := PlayQuiz(quiz)
+	quiz.Shuffle()
+	numProblems, goodAnswers, err := quiz.Play()
 
 	if err != nil {
 		fmt.Printf("\nTimeout: you have solved %d problems out of %d\n", goodAnswers, numProblems)
@@ -64,31 +64,31 @@ func ReadQuiz(s string) (Quiz, error) {
 	return quiz, nil
 }
 
-func ShuffleQuiz(quiz Quiz) {
-	rand.Shuffle(len(quiz.Problems), func(i, j int) {
-		quiz.Problems[i], quiz.Problems[j] = quiz.Problems[j], quiz.Problems[i]
+func (q Quiz) Shuffle() {
+	rand.Shuffle(len(q.Problems), func(i, j int) {
+		q.Problems[i], q.Problems[j] = q.Problems[j], q.Problems[i]
 	})
 }
 
-func PlayQuiz(quiz Quiz) (numProblems int, solvedProblems int, err error) {
-	StartQuiz()
+func (q Quiz) Play() (numProblems int, solvedProblems int, err error) {
+	startQuiz()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	numProblems = len(quiz.Problems)
+	numProblems = len(q.Problems)
 	solvedProblems = 0
 
 	ch := make(chan int)
 	go func() {
-		for _, problem := range quiz.Problems {
-			answer, _ := GetAnswer(problem.Question)
+		for _, problem := range q.Problems {
+			answer, _ := getAnswer(problem.Question)
 			if answer == problem.Answer {
 				ch <- 1
 			}
 		}
 	}()
 
-	for i := 0; i < len(quiz.Problems); i++ {
+	for i := 0; i < len(q.Problems); i++ {
 		select {
 		case <-ch:
 			solvedProblems++
@@ -99,7 +99,7 @@ func PlayQuiz(quiz Quiz) (numProblems int, solvedProblems int, err error) {
 	return numProblems, solvedProblems, nil
 }
 
-func GetAnswer(question string) (answer string, err error) {
+func getAnswer(question string) (answer string, err error) {
 	fmt.Printf("%s = ", question)
 	reader := bufio.NewReader(os.Stdin)
 	answer, err = reader.ReadString('\n')
@@ -110,7 +110,7 @@ func GetAnswer(question string) (answer string, err error) {
 	return answer, nil
 }
 
-func StartQuiz() {
+func startQuiz() {
 	fmt.Print("You have 10 seconds to finish the quiz. Enter to start quiz: ")
 	reader := bufio.NewReader(os.Stdin)
 	reader.ReadString('\n')
