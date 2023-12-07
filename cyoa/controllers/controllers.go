@@ -9,15 +9,19 @@ import (
 	"github.com/janhaans/golang/cyoa/templates"
 )
 
+var tmpl *template.Template
+
+func init() {
+	tmpl = template.Must(template.ParseFS(templates.FS, "chapter.gohtml"))
+}
+
 func IntroHandlerFunc() func(http.ResponseWriter, *http.Request) {
-	tmpl := template.Must(template.ParseFS(templates.FS, "chapter.gohtml"))
 	return func(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, story.PublishedStory["intro"])
 	}
 }
 
 func ChapterHanderFunc(r *mux.Router) func(http.ResponseWriter, *http.Request) {
-	tmpl := template.Must(template.ParseFS(templates.FS, "chapter.gohtml"))
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		chapter := vars["chapter"]
