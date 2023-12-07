@@ -1,25 +1,29 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 
-	"github.com/janhaans/golang/cyoa/article"
 	"github.com/janhaans/golang/cyoa/controller"
+	"github.com/janhaans/golang/cyoa/story"
 )
 
 func main() {
+	filename := flag.String("file", "gopher.json", "JSON file containing all the chapters of a story")
+	flag.Parse()
 	mux := http.NewServeMux()
 
-	articles, err := article.ReadArticles("gopher.json")
+	story, err := story.GetStory(*filename)
 	if err != nil {
 		log.Fatalf("%#v", err)
 	}
-	for path, article := range articles {
+
+	for path, chapter := range story {
 		if path == "intro" {
-			mux.HandleFunc("/", controller.Article(article))
+			mux.HandleFunc("/", controller.Chapter(chapter))
 		} else {
-			mux.HandleFunc("/"+path, controller.Article(article))
+			mux.HandleFunc("/"+path, controller.Chapter(chapter))
 		}
 	}
 
