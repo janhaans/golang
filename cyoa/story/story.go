@@ -18,16 +18,17 @@ type Option struct {
 	Path string `json:"arc"`
 }
 
-func GetStory(fName string) (Story, error) {
-	bs, err := os.ReadFile(fName)
+var PublishedStory Story
+
+func PublishStory(filename string) error {
+	bs, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var story Story
-	err = json.Unmarshal(bs, &story)
+	err = json.Unmarshal(bs, &PublishedStory)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return story, nil
+	return nil
 }

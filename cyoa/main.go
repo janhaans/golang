@@ -2,33 +2,30 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/janhaans/golang/cyoa/controller"
+	"github.com/gorilla/mux"
+	"github.com/janhaans/golang/cyoa/controllers"
 	"github.com/janhaans/golang/cyoa/story"
 )
 
 func main() {
+	port := flag.Int64("port", 8080, "Port the server is listening at")
 	filename := flag.String("file", "gopher.json", "JSON file containing all the chapters of a story")
 	flag.Parse()
-	mux := http.NewServeMux()
 
-	story, err := story.GetStory(*filename)
+	r := mux.NewRouter()
+
+	err := story.PublishStory(*filename)
 	if err != nil {
-		log.Fatalf("%#v", err)
+		log.Fatalf("Story could not be parsed from JSON file, %v", err)
 	}
 
-	for path, chapter := range story {
-		if path == "intro" {
-			mux.HandleFunc("/", controller.Chapter(chapter))
-		} else {
-			mux.HandleFunc("/"+path, controller.Chapter(chapter))
-		}
-	}
+	r.HandleFunc("/", controllers.IntroHandlerFunc())
+	r.HandleFunc("/{chapter}", controllers.ChapterHanderFunc(r))
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatalf("%#v", err)
-	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), r))
 
 }
