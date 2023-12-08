@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -17,18 +18,31 @@ func init() {
 
 func IntroHandlerFunc() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, story.PublishedStory["intro"])
+		err := tmpl.Execute(w, story.PublishedStory["intro"])
+		if err != nil {
+			log.Printf("Template execution failed %v\n", err)
+			http.Error(w, "Template execution failed", http.StatusBadGateway)
+		} else {
+			log.Println("Chapter intro served")
+		}
 	}
 }
 
 func ChapterHanderFunc(r *mux.Router) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		chapter := vars["chapter"]
-		if _, ok := story.PublishedStory[chapter]; !ok {
-			http.NotFound(w, r)
-		} else {
-			tmpl.Execute(w, story.PublishedStory[chapter])
+		path := vars["chapter"]
+		if chapter, ok := story.PublishedStory[path]; ok {
+			err := tmpl.Execute(w, chapter)
+			if err != nil {
+				log.Printf("Template execution failed %v\n", err)
+				http.Error(w, "Template execution failed", http.StatusBadGateway)
+			} else {
+				log.Printf("Chapter %s served\n", path)
+			}
+			return
 		}
+		log.Printf("There is not chapter %s\n", path)
+		http.NotFound(w, r)
 	}
 }
