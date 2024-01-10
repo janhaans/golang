@@ -3,10 +3,13 @@ go 1.21.3
 use ./payment
 
 use (
+	./cobra
 	./cyoa
+	./injection
 	./mytoml
 	./nlp
 	./quiz
 	./stemmer
+	./tasker
 	./urlshortener
 )
